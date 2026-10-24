@@ -8,7 +8,7 @@
 # Windows PowerShell 5.1 compatible - keep this file ASCII only.
 # ==============================================================================
 
-$script:PMVersion = '1.0.1'
+$script:PMVersion = '1.0.2'
 $script:PMSchema  = 2
 
 # ----------------------------- Console output ---------------------------------
@@ -31,7 +31,13 @@ function Start-PMLog([string]$path) {
 }
 function Write-PMLog([string]$msg) {
     if (-not $script:PMLogFile) { return }
-    try { Add-Content -LiteralPath $script:PMLogFile -Value ("{0:yyyy-MM-dd HH:mm:ss}  {1}" -f (Get-Date), $msg) -Encoding UTF8 } catch { }
+    try {
+        Add-Content -LiteralPath $script:PMLogFile -Value ("{0:yyyy-MM-dd HH:mm:ss}  {1}" -f (Get-Date), $msg) -Encoding UTF8 -ErrorAction Stop
+    } catch {
+        # Folder gone (deleted or moved while running)? Warn once and stop logging instead of flooding the screen.
+        $f = $script:PMLogFile; $script:PMLogFile = $null
+        Write-Host "Log file can no longer be written ($f) - was the folder deleted? Logging stopped." -ForegroundColor Yellow
+    }
 }
 
 # ----------------------------- Settings (INI) ---------------------------------

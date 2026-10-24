@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2 - 2026-10-24
+
+- Capture creates the package folder only after you press Enter (nothing half-made while the window waits)
+- A log that can no longer be written gives one warning instead of an error on every line
+
 ## 1.0.1 - 2026-10-24
 
 Fixes from the first real capture (a desktop with ten drive letters pointing at one disk).

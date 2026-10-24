@@ -32,21 +32,24 @@ $ini = Read-PMIni $ConfigPath
 if (-not $PackageRoot) { $PackageRoot = Get-PMSetting $ini 'Paths' 'PackageRoot' '' }
 if (-not $PackageRoot) { $PackageRoot = Split-Path $toolRoot -Parent }
 
-$pkg    = Join-Path $PackageRoot ("{0}_{1}" -f $env:COMPUTERNAME, (New-PMStamp))
-$sys    = Join-Path $pkg 'system'
-$logDir = Join-Path $pkg 'logs'
-New-Item -ItemType Directory -Path $sys, $logDir -Force | Out-Null
-Start-PMLog (Join-Path $logDir 'capture.log')
-
 Write-Host ''
 Write-Host "PCMigrate $script:PMVersion - capturing $env:COMPUTERNAME" -ForegroundColor Cyan
-Write-Host "Package: $pkg"
+Write-Host "Packages go to: $PackageRoot"
 Write-Host ''
 if (-not $Unattended) {
     Write-Host 'Close the programs whose settings you want (browsers, editors, mail, etc.)' -ForegroundColor Yellow
     Write-Host 'so their files are not locked or half-written. Nothing on this PC is changed.' -ForegroundColor Yellow
     Read-Host 'Press Enter to start'
 }
+
+# The package folder is created only now, so nothing half-made sits around while the window waits.
+$pkg    = Join-Path $PackageRoot ("{0}_{1}" -f $env:COMPUTERNAME, (New-PMStamp))
+$sys    = Join-Path $pkg 'system'
+$logDir = Join-Path $pkg 'logs'
+try { New-Item -ItemType Directory -Path $sys, $logDir -Force -ErrorAction Stop | Out-Null }
+catch { Write-PMError "Cannot create the package folder $pkg : $($_.Exception.Message)"; if (-not $Unattended) { Read-Host 'Press Enter to close' }; exit 1 }
+Start-PMLog (Join-Path $logDir 'capture.log')
+Write-PMInfo "Package: $pkg"
 
 # ----------------------------- 1. System profile ------------------------------
 Write-PMStep '1/9  Hardware and system profile'
