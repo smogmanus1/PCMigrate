@@ -52,10 +52,11 @@ function Get-PMKnownFolders {
         'Videos'    = 'My Video'
         'Favorites' = 'Favorites'
     }
-    $vals = Get-ItemProperty -Path $key -ErrorAction SilentlyContinue
+    $k = Get-Item -LiteralPath $key -ErrorAction SilentlyContinue
     foreach ($n in $names.Keys) {
         $raw = $null
-        if ($vals) { $raw = $vals.($names[$n]) }
+        # read WITHOUT expanding %USERPROFILE% so the value stays portable
+        if ($k) { $raw = $k.GetValue($names[$n], $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) }
         if ($raw) {
             $out[$n] = [ordered]@{
                 ValueName = $names[$n]
@@ -141,6 +142,7 @@ function Get-PMSystemProfile([switch]$Quick) {
             Type   = switch ([int]$d.DriveType) { 2 {'Removable'} 3 {'Fixed'} 4 {'Network'} 5 {'CD'} 6 {'RAM'} default {'Other'} }
             Label  = $d.VolumeName
             SizeGB = if ($d.Size) { [math]::Round($d.Size / 1GB, 0) } else { 0 }
+            Serial = "$($d.VolumeSerialNumber)"   # same serial = same disk under another letter (SUBST / DOS device)
             Network = $d.ProviderName
         }
     }

@@ -143,6 +143,10 @@ function New-PMPlan($pkg, $target, $rules, $ini, $installedIds, $targetPrograms,
     if (-not $progress) { $progress = { param($p, $t) } }
     $items = New-Object System.Collections.Generic.List[object]
 
+    $script:PMRules = $rules
+    $script:PMCtx   = $null
+    $script:PMIni   = $ini
+    $script:PMHw    = New-PMHardwareText $target
     $ctx = @{
         Rules      = $rules
         Hw         = New-PMHardwareText $target
@@ -151,6 +155,7 @@ function New-PMPlan($pkg, $target, $rules, $ini, $installedIds, $targetPrograms,
         DstIndex   = New-PMProgramIndex $targetPrograms @()
         InstallIds = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
     }
+    $script:PMCtx = $ctx
     $idName = @{}
     foreach ($w in $pkg.WingetInv) { if ($w.Id -and $w.Name) { $idName[$w.Id] = $w.Name } }
 
@@ -294,6 +299,41 @@ function New-PMPlan($pkg, $target, $rules, $ini, $installedIds, $targetPrograms,
     return $items.ToArray()
 }
 
+# Does a program exist here? Accepts full paths and bare commands found on PATH (e.g. 'python').
+function Test-PMProgramPath([string]$exe) {
+    if (-not $exe) { return $false }
+    if ([IO.Path]::IsPathRooted($exe)) { return (Test-Path -LiteralPath $exe) }
+    # real programs only - not PowerShell aliases (curl/wget in 5.1) or the Store's python.exe stubs
+    $cmd = Get-Command $exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    return [bool]($cmd -and $cmd.Source -notlike '*\Microsoft\WindowsApps\*')
+}
+
+# Is the program behind a startup item / task being installed earlier in this run?
+function Test-PMInstallsThisRun([string[]]$names) {
+    if (-not $script:PMCtx) { return $null }
+    foreach ($n in $names) {
+        if (-not $n -or $n.Length -lt 3) { continue }
+        foreach ($p in @(Find-PMProgram $script:PMCtx.SrcIndex $n $script:PMCtx.Rules.Aliases)) {
+            $wid = $p.WingetId
+            if (-not $wid) { $wid = Get-PMWingetAlternative $script:PMCtx.Rules $p.Name }
+            if ($wid -and $script:PMCtx.InstallIds.Contains($wid)) { return $p.Name }
+        }
+    }
+    return $null
+}
+
+# Names a startup item or task can be recognised by: its own name, the program
+# file name and the folders it lives in (e.g. ...\AMD\CNext\RadeonSoftware.exe).
+function Get-PMPathCandidates([string]$name, [string]$exe) {
+    $c = @($name)
+    $exe = $exe -replace '(?i)^[A-Z]:\\Users\\[^\\]+', ''   # the user name is not a program name
+    if ($exe) {
+        $c += [IO.Path]::GetFileNameWithoutExtension($exe)
+        $c += @($exe -split '\\' | Select-Object -Skip 1 | Where-Object { $_ -and $_ -notmatch '^(Program Files( \(x86\))?|ProgramData|Users|AppData|Local|Roaming|Programs|Windows|System32)$' })
+    }
+    return $c
+}
+
 # ----------------------------- Windows settings items -------------------------
 function New-PMWindowsItems($pkg, $target) {
     $out = @()
@@ -319,13 +359,19 @@ function New-PMWindowsItems($pkg, $target) {
     # Known folders (Documents, Desktop... moved to another location)
     $kf = Read-PMJson (Join-Path $sys 'knownfolders.json')
     if ($kf) {
+        $srcProfile = if ($pkg.Source -and $pkg.Source.UserProfile) { "$($pkg.Source.UserProfile)".TrimEnd('\') } else { '' }
+        $defaults = @{ Desktop = 'Desktop'; Documents = 'Documents'; Downloads = 'Downloads'; Music = 'Music'; Pictures = 'Pictures'; Videos = 'Videos'; Favorites = 'Favorites' }
         foreach ($p in $kf.PSObject.Properties) {
             $name = $p.Name; $raw = "$($p.Value.Raw)"
-            if (-not $raw -or $raw -match '^%USERPROFILE%\\[^\\]+$') { continue }   # default location
+            # older captures stored expanded paths - turn C:\Users\old\... back into %USERPROFILE%\...
+            if ($srcProfile -and $raw.StartsWith($srcProfile + '\', [StringComparison]::OrdinalIgnoreCase)) {
+                $raw = '%USERPROFILE%' + $raw.Substring($srcProfile.Length)
+            }
+            if (-not $raw -or $raw -ieq "%USERPROFILE%\$($defaults[$name])") { continue }   # Windows' default location
+            $expanded = [Environment]::ExpandEnvironmentVariables($raw)
             $current = $target.KnownFolders.$name
             $curRaw = if ($current) { "$($current.Raw)" } else { '' }
-            if ($curRaw -ieq $raw) { continue }
-            $expanded = [Environment]::ExpandEnvironmentVariables($raw)
+            if ([Environment]::ExpandEnvironmentVariables($curRaw).TrimEnd('\') -ieq $expanded.TrimEnd('\')) { continue }   # already the same here
             $data = @{ ValueName = $p.Value.ValueName; Raw = $raw; Folder = $name }
             if (Test-Path -LiteralPath $expanded) {
                 $out += New-PMItem $G 'knownfolder' "$name folder -> $raw" 'Option' "On the old PC your $name folder lived at $raw. That folder exists here too." @('File Explorer restarts at the end so the change shows up.') $data 0 $true
@@ -365,18 +411,26 @@ function New-PMWindowsItems($pkg, $target) {
     }
 
     # Startup items
+    $startupSkip = @(Get-PMList $script:PMIni 'StartupSkip')
+    $taskSkip    = @(Get-PMList $script:PMIni 'TaskSkip')
     $st = @(Read-PMJson (Join-Path $sys 'startup.json'))
     $runNow = @(Get-PMRegValues 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' | ForEach-Object { $_.Name })
     foreach ($s in $st) {
         if (-not $s -or -not $s.Name) { continue }
+        if (Test-PMLike $s.Name $startupSkip) { continue }
         $exists = $false
         if ($s.Type -eq 'Run' -and ($runNow -contains $s.Name)) { $exists = $true }
         if ($s.Type -eq 'Folder' -and (Test-Path -LiteralPath (Join-Path ([Environment]::GetFolderPath('Startup')) $s.File))) { $exists = $true }
         $exe = [Environment]::ExpandEnvironmentVariables("$($s.Exe)")
+        if ($s.Type -eq 'Folder' -and [IO.Path]::GetExtension("$($s.File)") -ne '.lnk') { $exe = '' }   # the script itself is what gets copied
         $data = @{ Entry = $s; Package = $pkg.Path }
         if ($exists) { $out += New-PMItem $G 'startup' "Startup: $($s.Name)" 'Exists' 'Already starts with Windows here.' @() $data; continue }
-        if ($exe -and (Test-Path -LiteralPath $exe)) {
-            $out += New-PMItem $G 'startup' "Startup: $($s.Name)" 'Option' "Starts with Windows: $($s.Command)" @() $data 0 $true
+        $v = Get-PMRuleVerdict $script:PMRules (Get-PMPathCandidates $s.Name $exe) 'task' $script:PMHw @(Get-PMList $script:PMIni 'Retired')
+        if ($v.Status) { $out += New-PMItem $G 'startup' "Startup: $($s.Name)" $v.Status $v.Reason $v.Notes $data; continue }
+        if (-not $exe -or (Test-PMProgramPath $exe)) {
+            $out += New-PMItem $G 'startup' "Startup: $($s.Name)" 'Option' "Starts with Windows: $($s.Command)" $v.Notes $data 0 $true
+        } elseif ($app = Test-PMInstallsThisRun (@($s.Name) + @(Get-PMPathCandidates '' $exe))) {
+            $out += New-PMItem $G 'startup' "Startup: $($s.Name)" 'WithInstall' "Starts with Windows - $app is installed earlier in this run." (@('Skipped automatically if the program is still missing at that point.') + $v.Notes) $data
         } else {
             $out += New-PMItem $G 'startup' "Startup: $($s.Name)" 'NotInstalled' "Program not found here: $exe" @() $data
         }
@@ -386,15 +440,22 @@ function New-PMWindowsItems($pkg, $target) {
     $tasks = @(Read-PMJson (Join-Path $sys 'tasks.json'))
     foreach ($t in $tasks) {
         if (-not $t -or -not $t.Name) { continue }
+        if ((Test-PMLike $t.Name $taskSkip) -or (Test-PMLike ("$($t.Path)$($t.Name)") $taskSkip)) { continue }
         $data = @{ Task = $t; Xml = (Join-Path $sys "tasks\$($t.File)") }
         $have = $null
         try { $have = Get-ScheduledTask -TaskName $t.Name -TaskPath $t.Path -ErrorAction Stop } catch { }
         if ($have) { $out += New-PMItem $G 'task' "Task: $($t.Name)" 'Exists' 'A task with this name already exists here.' @() $data; continue }
         $exe = [Environment]::ExpandEnvironmentVariables("$($t.Exe)")
-        if (-not $exe -or (Test-Path -LiteralPath $exe)) {
-            $notes = @()
-            if ($t.Password) { $notes = @('Runs whether or not you are signed in - Windows will ask for your password.') }
+        $v = Get-PMRuleVerdict $script:PMRules (@(Get-PMPathCandidates $t.Name $exe) + @("$($t.Path)" -split '\\' | Where-Object { $_ })) 'task' $script:PMHw @(Get-PMList $script:PMIni 'Retired')
+        if ($v.Status) { $out += New-PMItem $G 'task' "Task: $($t.Name)" $v.Status $v.Reason $v.Notes $data; continue }
+        $notes = @($v.Notes)
+        if ($t.Password) { $notes += 'Runs whether or not you are signed in - Windows will ask for your password.' }
+        if (-not $exe -or (Test-PMProgramPath $exe)) {
             $out += New-PMItem $G 'task' "Task: $($t.Name)" 'Option' "Scheduled task running: $($t.Exe) $($t.Args)" $notes $data 0 $true
+        } elseif (-not [IO.Path]::IsPathRooted($exe)) {
+            $out += New-PMItem $G 'task' "Task: $($t.Name)" 'Option' "Scheduled task running: $($t.Exe) $($t.Args)" (@("'$exe' is not on this PC's PATH yet - install it first or the task will fail.") + $notes) $data 0 $false
+        } elseif ($app = Test-PMInstallsThisRun (@($t.Name) + @(Get-PMPathCandidates '' $exe))) {
+            $out += New-PMItem $G 'task' "Task: $($t.Name)" 'WithInstall' "Scheduled task - $app is installed earlier in this run." (@('Skipped automatically if the program is still missing at that point.') + $notes) $data
         } else {
             $out += New-PMItem $G 'task' "Task: $($t.Name)" 'NotInstalled' "Program not found here: $exe" @() $data
         }
@@ -403,7 +464,9 @@ function New-PMWindowsItems($pkg, $target) {
     # Fonts
     $fonts = Read-PMCsv (Join-Path $pkg.Path 'Fonts\fonts.csv')
     if ($fonts.Count) {
+        $winFonts = '^(Segoe|Ebrima|Gadugi|Leelawadee|Malgun|Microsoft|Myanmar|Nirmala|Javanese|Mongolian|Sitka|Cascadia|Bahnschrift|Ink Free|HoloLens|Yu Gothic|MS Gothic|SimSun|NSimSun|MingLiU|PMingLiU|Sans Serif Collection|Arial|Calibri|Cambria|Candara|Consolas|Constantia|Corbel|Courier New|Georgia|Lucida|Palatino|Tahoma|Times New Roman|Trebuchet|Verdana|Webdings|Wingdings|Symbol|Marlett|Gabriola|Comic Sans|Impact|Franklin Gothic|Mv Boli|MV Boli|Sylfaen|Mangal|Kartika|Vrinda|Shruti|Tunga|Raavi|Latha|Gautami|Kalinga|Iskoola|Nyala|Plantagenet|Euphemia|Gisha|Aharoni|David|Miriam|Narkisim|Levenim|Rod|FrankRuehl|Tw Cen)'
         $missing = @($fonts | Where-Object {
+            $_.Name -notmatch $winFonts -and
             -not (Test-Path -LiteralPath (Join-Path "$env:WINDIR\Fonts" $_.File)) -and
             -not (Test-Path -LiteralPath (Join-Path "$env:LOCALAPPDATA\Microsoft\Windows\Fonts" $_.File))
         })
@@ -498,17 +561,31 @@ function New-PMPathItems($pkg, $target, $settingsItems, [scriptblock]$progress) 
 
     $translations = @()
     $maps = @{}
+    $aliases = @{}; $aliasRoots = @()
     foreach ($root in ($roots.Keys | Sort-Object)) {
         $res = Resolve-PMPathRoot $root $target $pkg.Source $reserved $netLetters
         $apps = (@($roots[$root]) | Select-Object -First 6) -join ', '
         switch ($res.State) {
             'OK'           { $out += New-PMItem $G 'info' "$root - works here as-is" 'Info' "Used by: $apps" @() @{ Resolution = $res } }
             'Mappable'     { if (-not $maps.ContainsKey($res.Letter)) { $maps[$res.Letter] = @() }; $maps[$res.Letter] += $res }
+            'Alias'        { if (-not $aliases.ContainsKey($res.Letter)) { $aliases[$res.Letter] = $res }; $aliasRoots += $root }
             'Rewrite'      { $translations += @{ From = $root; To = $res.Target } }
             default        { $out += New-PMItem $G 'info' "$root - not available here" 'Info' "$($res.Note) Used by: $apps" @() @{ Resolution = $res } }
         }
     }
 
+    foreach ($letter in ($aliases.Keys | Sort-Object)) {
+        $to = $aliases[$letter].Target
+        $used = (@($aliasRoots | Where-Object { $_.StartsWith("${letter}:") }) | Select-Object -First 4) -join ', '
+        $notes = @('Works like SUBST - no files are moved. Takes effect after a restart. Undo removes it.')
+        if ($aliases[$letter].Certain) {
+            $out += New-PMItem $G 'drivemap' "Make drive ${letter}: another name for $to" 'Recommended' "On the old PC ${letter}: and $($to.TrimEnd('\')) were the same disk. Saved paths like $used keep working." $notes @{ Letter = $letter; AliasOf = $to; Links = @() }
+        } else {
+            $notes += 'This package has no disk IDs (older capture), so "same disk" is a guess from the label and size - tick it only if you know they were one disk.'
+            $out += New-PMItem $G 'drivemap' "Make drive ${letter}: another name for $to" 'Option' "On the old PC ${letter}: and $($to.TrimEnd('\')) look like the same disk. Saved paths like $used would keep working." $notes @{ Letter = $letter; AliasOf = $to; Links = @() } 0 $false
+        }
+        if ($maps.ContainsKey($letter)) { $maps.Remove($letter) }
+    }
     foreach ($letter in ($maps.Keys | Sort-Object)) {
         $links = @($maps[$letter] | ForEach-Object { @{ Top = $_.Top; Target = $_.Target } })
         $desc = (@($maps[$letter] | ForEach-Object { "$($_.Root) -> $($_.Target)" }) -join '; ')

@@ -46,6 +46,10 @@ function Find-PMPathRefs([string]$itemPath, [string]$oldProfile) {
             if ($letter -eq 'C') { continue }
             $top = $m.Groups[2].Value.Trim()
             if (-not $top -or $top.Contains('%') -or $top.StartsWith('.')) { continue }
+            # a file at the root of the drive (nothing follows it) - only the letter matters
+            $end = $m.Index + $m.Length
+            $next = if ($end -lt $text.Length) { $text[$end] } else { '' }
+            if ($next -ne '\' -and $next -ne '/' -and $top -match '\.[A-Za-z0-9]{2,5}$') { $top = '' }
             $root = "${letter}:\$top"
             if ($result.Roots.ContainsKey($root)) { $result.Roots[$root]++ } else { $result.Roots[$root] = 1 }
             $hit = $true
@@ -66,8 +70,8 @@ function Find-PMPathRefs([string]$itemPath, [string]$oldProfile) {
 # State: OK | Mappable | Rewrite | Missing | DriveMissing
 function Resolve-PMPathRoot([string]$root, $target, $source, [string[]]$reserved, [string[]]$netLetters) {
     $letter = $root.Substring(0, 1).ToUpperInvariant()
-    $top    = $root.Substring(3)
-    $res = [ordered]@{ Root = $root; Letter = $letter; Top = $top; State = ''; Target = ''; Note = '' }
+    $top    = $root.Substring(3)   # empty = the drive root itself
+    $res = [ordered]@{ Root = $root; Letter = $letter; Top = $top; State = ''; Target = ''; Note = ''; Certain = $false }
 
     if (Test-Path -LiteralPath $root) { $res.State = 'OK'; $res.Target = $root; return [pscustomobject]$res }
     if ($netLetters -contains $letter) {
@@ -81,6 +85,33 @@ function Resolve-PMPathRoot([string]$root, $target, $source, [string[]]$reserved
     if (-not $letterExists -and (Test-Path "${letter}:\")) { $letterExists = $true }
     # letters mapped to network shares or DOS devices count as taken (an elevated process can't see them)
     if (-not $letterExists -and ($reserved -contains $letter)) { $letterExists = $true }
+
+    if (-not $top) {
+        $res.State = if ($letterExists) { 'Missing' } else { 'DriveMissing' }
+        $res.Note  = if ($letterExists) { "Files saved at the root of ${letter}: - check they exist here." } else { "Drive ${letter}: is not on this PC - only recent-file entries point there." }
+        return [pscustomobject]$res
+    }
+
+    # Same disk under another letter on the old PC (e.g. E: and F: were one drive)? Map the letter to that drive.
+    if (-not $letterExists -and $source) {
+        $sd = @($source.Drives | Where-Object { "$($_.Letter)".ToUpperInvariant() -eq "${letter}:" }) | Select-Object -First 1
+        if ($sd -and $sd.SizeGB) {
+            # Same volume serial = certainly the same disk. Without serials (older captures) fall back to a
+            # non-empty label + size match, which is only a guess - the plan then leaves it unticked.
+            $twins = @($source.Drives | Where-Object { $_.Letter -ne $sd.Letter -and (
+                ($sd.Serial -and $_.Serial -eq $sd.Serial) -or
+                (-not $sd.Serial -and $sd.Label -and $_.Label -eq $sd.Label -and $_.SizeGB -eq $sd.SizeGB -and $_.Type -eq $sd.Type) ) })
+            $res.Certain = [bool]$sd.Serial
+            foreach ($tw in $twins) {
+                $k = "$($tw.Letter)".Substring(0, 1).ToUpperInvariant()
+                if (Test-Path -LiteralPath "${k}:\$top") {
+                    $res.State = 'Alias'; $res.Target = "${k}:\"
+                    $res.Note = "On the old PC ${letter}: and ${k}: were the same disk - ${letter}: becomes another name for ${k}: here."
+                    return [pscustomobject]$res
+                }
+            }
+        }
+    }
 
     # Find the equivalent folder on this PC
     $cands = @()

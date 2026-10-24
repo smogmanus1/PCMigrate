@@ -126,9 +126,16 @@ $script:PMVerdictRank = @{ Skip = 1; Hardware = 2; Check = 3; Option = 4 }
 # Builds a searchable index from uninstall entries (+ optional winget inventory).
 function New-PMProgramIndex($programs, $wingetInventory) {
     $idByName = @{}
+    $invKeys = @()
     foreach ($w in @($wingetInventory)) {
-        if ($w.Name -and $w.Id -and $w.Source) { $idByName[(ConvertTo-PMKey $w.Name)] = $w.Id }
+        if ($w.Name -and $w.Id -and $w.Source) {
+            $k = ConvertTo-PMKey $w.Name
+            $idByName[$k] = $w.Id
+            if ($k.Length -ge 4) { $invKeys += $k }
+        }
     }
+    # longest first, so 'ollama' does not beat a more specific name
+    $invKeys = @($invKeys | Sort-Object Length -Descending)
     $index = New-Object System.Collections.Generic.List[object]
     foreach ($p in @($programs)) {
         if (-not $p.Name) { continue }
@@ -143,10 +150,19 @@ function New-PMProgramIndex($programs, $wingetInventory) {
             LocKey    = ConvertTo-PMKey $loc
             NameLower = $p.Name.ToLowerInvariant()
             PubLower  = "$($p.Publisher)".ToLowerInvariant()
-            WingetId  = $idByName[$key]
+            WingetId  = (Find-PMWingetIdForKey $key $idByName $invKeys)
         })
     }
     return $index
+}
+
+# winget ID for a program key: exact name match, else the longest winget name it starts with
+# (Windows says 'Ollama version 0.40.4', winget says 'Ollama').
+function Find-PMWingetIdForKey([string]$key, $idByName, $invKeys) {
+    if (-not $key) { return $null }
+    if ($idByName.ContainsKey($key)) { return $idByName[$key] }
+    foreach ($k in $invKeys) { if ($key.StartsWith($k)) { return $idByName[$k] } }
+    return $null
 }
 
 # Finds programs in the index that a settings item (folder or vendor name) belongs to.

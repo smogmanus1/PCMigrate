@@ -170,9 +170,15 @@ function Get-PMExeFromCommand([string]$cmd) {
     if (-not $cmd) { return '' }
     $c = $cmd.Trim()
     if ($c.StartsWith('"')) { $end = $c.IndexOf('"', 1); if ($end -lt 0) { return $c.Trim('"') }; return $c.Substring(1, $end - 1) }
-    $m = [regex]::Match($c, '^(.+?\.(exe|cmd|bat|com|vbs|ps1))(\s|$)', 'IgnoreCase')
+    $m = [regex]::Match($c, '^(.+?\.(exe|cmd|bat|com|vbs|ps1|lnk|ahk))(\s|$)', 'IgnoreCase')
     if ($m.Success) { return $m.Groups[1].Value }
-    return ($c -split '\s')[0]
+    # unquoted path with spaces: grow word by word until it names an existing file
+    $parts = $c -split ' '
+    for ($n = $parts.Count; $n -ge 1; $n--) {
+        $try = ($parts[0..($n - 1)] -join ' ')
+        if (Test-Path -LiteralPath $try -PathType Leaf) { return $try }
+    }
+    return $parts[0]
 }
 $startup = @()
 foreach ($p in (Get-PMRegValues 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run')) {
@@ -201,7 +207,7 @@ New-Item -ItemType Directory -Path (Join-Path $sys 'tasks') -Force | Out-Null
 try {
     foreach ($t in Get-ScheduledTask -ErrorAction Stop) {
         if ($t.TaskPath -like '\Microsoft\*') { continue }
-        if (Test-PMLike $t.TaskName $taskSkip) { continue }
+        if ((Test-PMLike $t.TaskName $taskSkip) -or (Test-PMLike ($t.TaskPath + $t.TaskName) $taskSkip)) { continue }
         $act = @($t.Actions | Where-Object { $_.Execute }) | Select-Object -First 1
         $file = (($t.TaskPath.Trim('\') + '_' + $t.TaskName) -replace '[\\/:*?"<>|]', '_').Trim('_') + '.xml'
         try {
@@ -267,6 +273,8 @@ if ($mfReg.Count -and $osDate) {
         $f = "$($p.Value)"; if (-not [IO.Path]::IsPathRooted($f)) { $f = Join-Path "$env:WINDIR\Fonts" $f }
         if (-not (Test-Path -LiteralPath $f)) { continue }
         $fi = Get-Item -LiteralPath $f
+        $owner = ''; try { $owner = (Get-Acl -LiteralPath $f).Owner } catch { }
+        if ($owner -match 'TrustedInstaller') { continue }   # shipped with Windows (updates can re-stamp their dates)
         if ($fi.CreationTime -gt $osDate -and -not ($fonts | Where-Object { $_.File -eq $fi.Name })) {
             Copy-Item -LiteralPath $f -Destination $fontDir -Force
             $fonts += [pscustomobject]@{ File = $fi.Name; Name = $p.Name; Scope = 'Machine' }

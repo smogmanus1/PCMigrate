@@ -197,6 +197,9 @@ function Invoke-PMWindowsItem($it, $pkg, [ref]$flags) {
         }
         'startup' {
             $e = $it.Data.Entry
+            $exe = [Environment]::ExpandEnvironmentVariables("$($e.Exe)")
+            if ($e.Type -eq 'Folder' -and [IO.Path]::GetExtension("$($e.File)") -ne '.lnk') { $exe = '' }   # the script itself gets copied
+            if ($exe -and [IO.Path]::IsPathRooted($exe) -and -not (Test-Path -LiteralPath $exe)) { Write-PMWarn "    program not found ($exe) - skipped"; return $false }
             if ($e.Type -eq 'Run') {
                 $kind = if ("$($e.Command)" -match '%') { 'ExpandString' } else { 'String' }
                 Set-PMRegValue 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' $e.Name $e.Command $kind $it.Name
@@ -253,6 +256,8 @@ function Invoke-PMWindowsItem($it, $pkg, [ref]$flags) {
 
 function Register-PMTask($it) {
     $t = $it.Data.Task
+    $exe = [Environment]::ExpandEnvironmentVariables("$($t.Exe)")
+    if ($exe -and [IO.Path]::IsPathRooted($exe) -and -not (Test-Path -LiteralPath $exe)) { Write-PMWarn "    program not found ($exe) - skipped"; return $false }
     try { if (Get-ScheduledTask -TaskName $t.Name -TaskPath $t.Path -ErrorAction Stop) { Write-PMInfo "    already exists - skipped"; return $true } } catch { }
     $xml = Get-Content -LiteralPath $it.Data.Xml -Raw
     $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
@@ -299,6 +304,11 @@ function Invoke-PMDriveMap($it) {
     if ((Test-Path "HKCU:\Network\$letter") -or ($dosNames -contains "${letter}:")) {
         Write-PMWarn "    Drive ${letter}: is already mapped (network drive or another mapping) - skipped."
         return $false
+    }
+    if ($it.Data.AliasOf) {
+        # whole-drive alias, like SUBST: F: -> \??\D:\
+        Set-PMRegValue $script:PMDosKey "${letter}:" ("\??\" + $it.Data.AliasOf) 'String' $it.Name
+        return $true
     }
     $root = "C:\PCMigrate\Drives\$letter"
     if (-not (Test-Path -LiteralPath $root)) {
