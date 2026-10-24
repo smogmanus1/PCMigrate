@@ -2,6 +2,7 @@
 
 ## 1.0.2 - 2026-10-24
 
+- Launcher: new **0. Update all apps first** button (winget upgrade --all, agreements accepted) to run on the old PC before capturing
 - Capture creates the package folder only after you press Enter (nothing half-made while the window waits)
 - A log that can no longer be written gives one warning instead of an error on every line
 

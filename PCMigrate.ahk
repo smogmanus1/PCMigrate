@@ -6,6 +6,7 @@
 ; PCMigrate moves your apps and settings from an old Windows PC to a new one,
 ; and decides on the NEW PC what actually fits its hardware.
 ;
+;   0. Update all apps        - optional, on the OLD PC first (winget upgrade --all)
 ;   1. Capture this PC        - run on the OLD PC (creates a package)
 ;   2. Restore onto this PC   - run on the NEW PC (checks hardware, you pick, it applies)
 ;   3. Undo last restore      - puts back everything a restore changed
@@ -31,6 +32,7 @@ PM_Gui.AddText("w340 y+2", "Move apps and settings to a new PC - it checks what 
 PM_Gui.SetFont("s10 norm cDefault")
 
 PM_Gui.AddText("w340 y+14", "On the OLD PC:")
+PM_Gui.AddButton("w340 h32", "0.  Update all apps first  (admin)").OnEvent("Click", PM_UpdateApps)
 PM_Gui.AddButton("w340 h40", "1.  Capture this PC").OnEvent("Click", (*) => PM_Run("Capture.ps1", false))
 PM_Gui.AddText("w340 y+14", "On the NEW PC:")
 PM_Gui.AddButton("w340 h40", "2.  Restore onto this PC  (admin)").OnEvent("Click", (*) => PM_Run("Restore.ps1", true))
@@ -59,6 +61,19 @@ PM_Run(script, elevate, extra := "") {
     ps := (!elevate && A_PtrSize = 4 && A_Is64bitOS) ? A_WinDir "\Sysnative\WindowsPowerShell\v1.0\powershell.exe" : "powershell.exe"
     cmd := ps ' -NoProfile -ExecutionPolicy Bypass -STA -File "' path '" ' extra
     try Run((elevate ? "*RunAs " : "") cmd, A_ScriptDir)
+    catch
+        MsgBox("Cancelled (administrator permission was not given).", "PCMigrate", "Icon!")
+}
+
+; Updates every winget-managed app so the captured settings match the versions the new PC will install.
+; Licence and source agreements are accepted automatically; the window stays open so you can read the results.
+PM_UpdateApps(*) {
+    if MsgBox("Update all apps with winget now?`n`nClose your browsers and other open apps first - an installer can't update an app that is running.`n`nAfterwards: restart, open your main apps once, then capture.", "PCMigrate", "OKCancel Iconi") != "OK"
+        return
+    upd := "winget source update && winget upgrade --all --include-unknown --silent"
+        . " --accept-package-agreements --accept-source-agreements --disable-interactivity"
+    cmd := A_ComSpec ' /k "title PCMigrate - updating apps && ' upd ' & echo. & echo ===== Done. Run it again to catch anything that was in use, then restart. ====="'
+    try Run("*RunAs " cmd)
     catch
         MsgBox("Cancelled (administrator permission was not given).", "PCMigrate", "Icon!")
 }

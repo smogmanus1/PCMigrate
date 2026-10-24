@@ -42,7 +42,7 @@ F:\Dropbox paths saved in your apps            Drive F: mapped so they keep work
 
 **1. Put the `PCMigrate` folder somewhere both PCs can reach.** A synced folder is easiest, for example `Dropbox\Migration\PCMigrate`. Packages are created next to the `PCMigrate` folder (`Dropbox\Migration\`), so they appear on the new PC by themselves. A USB drive works too.
 
-**2. On the old PC:** run `PCMigrate.ahk` and click **1. Capture this PC**. Close your browsers and other apps first. Nothing on the old PC is changed.
+**2. On the old PC:** optionally click **0. Update all apps first**, then restart, so the captured settings match the versions the new PC will install. Then click **1. Capture this PC**. Close your browsers and other apps first. Capturing changes nothing on the old PC.
 
 **3. On the new PC** (signed in as the user you are moving to): run `PCMigrate.ahk`.
 - Optional: click **Preview only** to get the report without changing anything.
