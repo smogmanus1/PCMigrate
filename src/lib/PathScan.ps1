@@ -9,7 +9,7 @@
 # ==============================================================================
 
 $script:PMSkipExt = '\.(exe|dll|sys|ocx|cab|msi|png|jpe?g|gif|ico|bmp|webp|tiff?|svg|mp[34]|m4a|wav|flac|ogg|avi|mkv|mov|zip|7z|rar|gz|pak|bin|woff2?|ttf|otf|pdf|docx?|xlsx?|pptx?|jar|pyc|node|wasm|asar)$'
-$script:PMDriveRx = [regex]'(?i)(?<![A-Za-z0-9.])(?<!(?<!/)/)([A-Z]):(?:\\\\|\\|/)+([^\\/:*?"<>|\r\n\t\x00]{1,64}?)(?=\\|/|["''\r\n<]|$)'
+$script:PMDriveRx = [regex]'(?i)(?<![A-Za-z0-9.])(?<!(?<!/)/)([A-Z]):(?:\\\\|\\|/)+([^\\/:*?"<>|\x00-\x1F]{1,64}?)(?=\\|/|["''\r\n<]|$)'
 
 # Scans one settings item (a folder or a single file).
 # Returns @{ Roots = @{ 'F:\Dropbox' = n }; User = n; Files = [list of @{ Path; Enc; Hit }]; Binary = [list of paths] }
@@ -46,6 +46,9 @@ function Find-PMPathRefs([string]$itemPath, [string]$oldProfile) {
             if ($letter -eq 'C') { continue }
             $top = $m.Groups[2].Value.Trim()
             if (-not $top -or $top.Contains('%') -or $top.StartsWith('.')) { continue }
+            if ($top.IndexOfAny([IO.Path]::GetInvalidFileNameChars()) -ge 0) { continue }
+            # in binary files random bytes can look like 'D:\...' - accept only plain, readable folder names there
+            if (-not $enc -and $top -notmatch '^[A-Za-z0-9][A-Za-z0-9 _.()&+,!#$@~''-]*$') { continue }
             # a file at the root of the drive (nothing follows it) - only the letter matters
             $end = $m.Index + $m.Length
             $next = if ($end -lt $text.Length) { $text[$end] } else { '' }
@@ -73,7 +76,7 @@ function Resolve-PMPathRoot([string]$root, $target, $source, [string[]]$reserved
     $top    = $root.Substring(3)   # empty = the drive root itself
     $res = [ordered]@{ Root = $root; Letter = $letter; Top = $top; State = ''; Target = ''; Note = ''; Certain = $false }
 
-    if (Test-Path -LiteralPath $root) { $res.State = 'OK'; $res.Target = $root; return [pscustomobject]$res }
+    if (Test-PMPathSafe $root) { $res.State = 'OK'; $res.Target = $root; return [pscustomobject]$res }
     if ($netLetters -contains $letter) {
         $res.State = 'Network'
         $res.Note  = "Drive ${letter}: is a network drive - these paths work once that network drive is connected (see the 'Network drive ${letter}:' item)."
@@ -82,7 +85,7 @@ function Resolve-PMPathRoot([string]$root, $target, $source, [string[]]$reserved
 
     $letterExists = $false
     foreach ($d in @($target.Drives)) { if ("$($d.Letter)".ToUpperInvariant() -eq "${letter}:") { $letterExists = $true } }
-    if (-not $letterExists -and (Test-Path "${letter}:\")) { $letterExists = $true }
+    if (-not $letterExists -and (Test-PMPathSafe "${letter}:\")) { $letterExists = $true }
     # letters mapped to network shares or DOS devices count as taken (an elevated process can't see them)
     if (-not $letterExists -and ($reserved -contains $letter)) { $letterExists = $true }
 
@@ -104,7 +107,7 @@ function Resolve-PMPathRoot([string]$root, $target, $source, [string[]]$reserved
             $res.Certain = [bool]$sd.Serial
             foreach ($tw in $twins) {
                 $k = "$($tw.Letter)".Substring(0, 1).ToUpperInvariant()
-                if (Test-Path -LiteralPath "${k}:\$top") {
+                if (Test-PMPathSafe "${k}:\$top") {
                     $res.State = 'Alias'; $res.Target = "${k}:\"
                     $res.Note = "On the old PC ${letter}: and ${k}: were the same disk - ${letter}: becomes another name for ${k}: here."
                     return [pscustomobject]$res
@@ -123,7 +126,7 @@ function Resolve-PMPathRoot([string]$root, $target, $source, [string[]]$reserved
     foreach ($d in @($target.Drives | Where-Object { $_.Type -eq 'Fixed' })) { $cands += "$($d.Letter)\$top" }
 
     $found = $null
-    foreach ($c in $cands) { if ($c -and (Test-Path -LiteralPath $c)) { $found = $c; break } }
+    foreach ($c in $cands) { if ($c -and (Test-PMPathSafe $c)) { $found = $c; break } }
 
     if ($found) {
         $res.Target = $found
@@ -149,6 +152,12 @@ function Resolve-PMPathRoot([string]$root, $target, $source, [string[]]$reserved
         }
     }
     return [pscustomobject]$res
+}
+
+# Exists check that never throws (odd characters just mean 'no').
+function Test-PMPathSafe([string]$p) {
+    if (-not $p) { return $false }
+    try { return ([IO.Directory]::Exists($p) -or [IO.File]::Exists($p)) } catch { return $false }
 }
 
 # ----------------------------- Rewriting --------------------------------------

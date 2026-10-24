@@ -8,7 +8,7 @@
 # Windows PowerShell 5.1 compatible - keep this file ASCII only.
 # ==============================================================================
 
-$script:PMVersion = '1.0.2'
+$script:PMVersion = '1.0.3'
 $script:PMSchema  = 2
 
 # ----------------------------- Console output ---------------------------------

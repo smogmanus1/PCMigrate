@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3 - 2026-10-24
+
+- Path scan ignores random bytes in binary files that only look like drive paths (first real Preview printed hundreds of "Illegal characters in path" errors)
+- Existence checks on saved paths can no longer raise errors
+
 ## 1.0.2 - 2026-10-24
 
 - Launcher: new **0. Update all apps first** button (winget upgrade --all, agreements accepted) to run on the old PC before capturing
