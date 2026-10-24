@@ -1,0 +1,333 @@
+{
+  "_about": "PCMigrate compatibility rules. Edit freely - see docs/RULES.md. Patterns use * wildcards and are matched against app names, winget IDs, settings folder names and registry vendor names. Requirement values are regular expressions tested against the NEW PC's hardware.",
+  "version": 1,
+
+  "aliases": {
+    "Code": ["Microsoft Visual Studio Code*", "Visual Studio Code*"],
+    "Martin Prikryl": ["WinSCP*"],
+    "Hyperionics": ["HyperSnap*"],
+    "Key Metric Software": ["Duplicate File Detective*"],
+    "TGRMN Software": ["Bulk Rename Utility*"],
+    "DigitalVolcano": ["Duplicate Cleaner*", "TextCrawler*"],
+    "ChemTable Software": ["Autorun Organizer*", "Reg Organizer*", "Soft Organizer*"],
+    "Piriform": ["CCleaner*", "Recuva*", "Speccy*", "Defraggler*"],
+    "Tracker Software": ["PDF-XChange*"],
+    "Softdeluxe": ["Free Download Manager*"],
+    "Resplendence Sp": ["WhoCrashed*"],
+    "Digiarty": ["VideoProc*", "WinX*"],
+    "Caphyon": ["Advanced Installer*"],
+    "BraveSoftware": ["Brave*"],
+    "Google": ["Google Chrome*"],
+    "Mozilla": ["Mozilla Firefox*", "Mozilla Thunderbird*"],
+    "KDE e.V.": ["digiKam*", "Kdenlive*"],
+    "The Document Foundation": ["LibreOffice*"],
+    "Valve": ["Steam*"],
+    "Hulubulu": ["Advanced Renamer*"],
+    "Qarmin": ["Czkawka*", "Krokiet*"],
+    "XYplorer64": ["XYplorer*"],
+    "WizTree3": ["WizTree*"],
+    "obs-studio": ["OBS Studio*"],
+    "foobar2000-v2": ["foobar2000*"],
+    "ollama app.exe": ["Ollama*"],
+    "DiskDefrag": ["Auslogics Disk Defrag*", "Disk Defrag*"],
+    "Apple Computer": ["iTunes*", "Apple *", "Bonjour*"],
+    "Apple Computer, Inc.": ["iTunes*", "Apple *", "Bonjour*"],
+    "Apple Inc.": ["iTunes*", "Apple *", "Bonjour*"],
+    "dvdcss": ["VLC*", "HandBrake*"],
+    "xpdf": ["Xpdf*"],
+    "Visual Studio Setup": ["Visual Studio Build Tools*", "Microsoft Visual Studio Installer*", "Visual Studio Community*", "Visual Studio Professional*", "Visual Studio Enterprise*"],
+    "HP_Easy_Start": ["HP *LaserJet*", "HP *OfficeJet*", "HP *DeskJet*", "HP Smart*"],
+    "PowerPanelPersonal": ["CyberPower PowerPanel*"],
+    "logioptionsplus": ["Logi Options*"],
+    "Logi": ["Logi *"],
+    "Logitech": ["Logitech*", "Logi *"],
+    "PFU": ["ScanSnap*"],
+    "asus_framework": ["ASUS Framework*"],
+    "Remotix QC": ["Remotix*"],
+    "ej-technologies": ["install4j*", "JProfiler*", "exe4j*"],
+    "ZoomUMX": ["Zoom*"],
+    "WinRAR SFX": ["WinRAR*"],
+    "OpenShell": ["Open-Shell*"],
+    "Amazon": ["Amazon Kindle*", "Kindle*"],
+    "Edge": ["Microsoft Edge*"],
+    "Tor Project": ["Tor Browser*"],
+    "Superhuman Platform": ["Superhuman*"],
+    "Perplexity": ["Comet*", "Perplexity*"],
+    "MiniTool Software Limited": ["MiniTool*"],
+    "C__Program Files_MiniTool Partition Wizard 13_partitionwizard.exe.ini": ["MiniTool Partition Wizard*"],
+    "Paragon Software": ["Paragon*"],
+    "GlarySoft": ["Glary*", "Absolute Uninstaller*"],
+    "Hewlett-Packard": ["HP *"],
+    "Brother Industries, Ltd.": ["Brother*"],
+    "Bitdefender Security App": ["Bitdefender*"],
+    "DropboxUpdate": ["Dropbox*"],
+    "Tailscale IPN": ["Tailscale*"],
+    "Iris": ["Iris*"],
+    "Patch My PC": ["Patch My PC*"],
+    "PDF Suite 20": ["PDF Suite*"],
+    "stickies": ["Stickies*"]
+  },
+
+  "shared": {
+    "_about": "Settings that belong to Windows or to many apps rather than one. Shown as Shared and selected by default because they are small and harmless.",
+    "names": ["ODBC", "QtProject", "JavaSoft", "Netscape", "MozillaPlugins", "Sysinternals", "IsolatedStorage", "NuGet", "BugSplat", "Chromium", "Chrome for Testing"]
+  },
+
+  "rules": [
+    {
+      "id": "amd-graphics",
+      "match": ["AMD Software*", "AMD Radeon*", "AMD Chat*", "AMD Privacy View*", "AMD Image Inspector*", "AMD Install Manager*", "AMD", "ATI", "AMD.AMDSoftware*"],
+      "requires": { "gpu": "AMD|Radeon" },
+      "reason": "AMD graphics software - this PC has no AMD graphics."
+    },
+    {
+      "id": "amd-cpu",
+      "match": ["AMD Chipset*", "AMD Ryzen*", "AMD.RyzenMaster*"],
+      "requires": { "cpu": "AMD" },
+      "reason": "AMD processor software - this PC does not have an AMD processor."
+    },
+    {
+      "id": "nvidia",
+      "match": ["NVIDIA*", "Nvidia.*"],
+      "except": ["Nvidia.GeForceNow*", "NVIDIA GeForce NOW*"],
+      "requires": { "gpu": "NVIDIA" },
+      "reason": "NVIDIA software - this PC has no NVIDIA graphics."
+    },
+    {
+      "id": "intel-graphics",
+      "match": ["Intel* Graphics*", "Intel Arc*", "Intel(R) Arc*"],
+      "requires": { "gpu": "Intel" },
+      "reason": "Intel graphics software - this PC has no Intel graphics."
+    },
+    {
+      "id": "intel-cpu",
+      "match": ["Intel* Extreme Tuning*", "Intel.IntelExtremeTuningUtility*"],
+      "requires": { "cpu": "Intel" },
+      "reason": "Intel processor tuning - this PC does not have an Intel processor."
+    },
+    {
+      "id": "realtek",
+      "match": ["Realtek*"],
+      "requires": { "device": "Realtek" },
+      "reason": "Realtek driver software - no Realtek hardware found on this PC."
+    },
+    {
+      "id": "asus-oem",
+      "match": ["ASUS*", "asus_*", "ROG *", "ROG-*", "AURA*", "Armoury*", "GameSDK*", "CPUID ASUS*", "ASUSTeK*"],
+      "requires": { "manufacturer": "ASUS" },
+      "reason": "ASUS motherboard / ROG utility - this PC is not an ASUS system."
+    },
+    {
+      "id": "msi-oem",
+      "match": ["MSI Center*", "MSI.*", "Mystic Light*", "Dragon Center*", "MSI Afterburner*"],
+      "except": ["MSI Afterburner*"],
+      "requires": { "manufacturer": "Micro-Star|MSI" },
+      "reason": "MSI system utility - this PC is not an MSI system."
+    },
+    {
+      "id": "gigabyte-oem",
+      "match": ["GIGABYTE*", "AORUS*", "RGB Fusion*", "GIGABYTE Control Center*"],
+      "requires": { "manufacturer": "Gigabyte" },
+      "reason": "Gigabyte utility - this PC is not a Gigabyte system."
+    },
+    {
+      "id": "dell-oem",
+      "match": ["Dell Command*", "Dell SupportAssist*", "Dell Update*", "Dell Optimizer*", "Dell Power Manager*", "Dell Peripheral Manager*", "Dell Display*Manager*", "Dell.CommandUpdate*", "Dell.Optimizer*", "Dell.SystemUpdate*", "Alienware*"],
+      "requires": { "manufacturer": "Dell|Alienware" },
+      "reason": "Dell system utility - this PC is not a Dell."
+    },
+    {
+      "id": "hp-oem",
+      "match": ["HP Support Assistant*", "HP.SupportAssistant*", "HP Image Assistant*", "HP.ImageAssistant*", "HP Hotkey*", "HP Sure*", "HP Wolf*", "HP Audio Switch*", "HP Notifications*", "HP System Event*", "HP Connection Optimizer*", "HP Documentation*", "HP Programmable Key*", "HP Power Manager*", "HP Security Update*", "HP Insights*", "HP Privacy Settings*", "HP Display Control*", "myHP*", "OMEN *", "HP Easy Clean*", "HP PC Hardware Diagnostics*"],
+      "requires": { "manufacturer": "HP|Hewlett" },
+      "reason": "HP computer utility - this PC is not an HP."
+    },
+    {
+      "id": "lenovo-oem",
+      "match": ["Lenovo Vantage*", "Lenovo System Update*", "Lenovo Commercial Vantage*", "Lenovo Hotkeys*", "Lenovo Legion*", "Lenovo.SystemUpdate*", "Lenovo.Vantage*", "Legion Zone*"],
+      "requires": { "manufacturer": "Lenovo" },
+      "reason": "Lenovo system utility - this PC is not a Lenovo."
+    },
+    {
+      "id": "hp-shared-keys",
+      "match": ["HP", "Hewlett-Packard"],
+      "appliesTo": ["settings"],
+      "requires": { "anyOf": [ { "manufacturer": "HP|Hewlett" }, { "printer": "HP|Hewlett" } ] },
+      "soft": true,
+      "reason": "HP settings - this PC is not an HP and has no HP printer set up."
+    },
+    {
+      "id": "hp-printer",
+      "match": ["HP *LaserJet*", "HP *OfficeJet*", "HP *DeskJet*", "HP *ENVY*", "HP Smart*", "HP * Plugin", "Product Improvement Study for HP*", "HP Print*", "HP Scan*", "HP_Easy_Start", "HP Easy Start*", "HP Color*"],
+      "requires": { "printer": "HP|Hewlett" },
+      "soft": true,
+      "reason": "HP printer software - no HP printer is set up on this PC.",
+      "note": "Install it if you will use that printer from this PC."
+    },
+    {
+      "id": "brother",
+      "match": ["Brother*"],
+      "requires": { "anyOf": [ { "printer": "Brother" }, { "device": "Brother" } ] },
+      "soft": true,
+      "reason": "Brother printer / label maker software - no Brother device found on this PC.",
+      "note": "Install it if you will connect that printer or label maker here."
+    },
+    {
+      "id": "dell-printer",
+      "match": ["Dell *Printer*", "Dell Printer*", "Dell*Laser*", "Dell E5*", "Dell C17*", "Dell H62*"],
+      "requires": { "printer": "Dell" },
+      "soft": true,
+      "reason": "Dell printer software - no Dell printer is set up on this PC."
+    },
+    {
+      "id": "epson-canon",
+      "match": ["Epson*", "EPSON*", "Canon*"],
+      "requires": { "anyOf": [ { "printer": "Epson|EPSON|Canon" }, { "device": "Epson|EPSON|Canon" } ] },
+      "soft": true,
+      "reason": "Printer / scanner software - no matching Epson or Canon device found."
+    },
+    {
+      "id": "scansnap",
+      "match": ["ScanSnap*", "PFU", "PFU *"],
+      "requires": { "device": "PFU|ScanSnap|Fujitsu|VID_04C5" },
+      "soft": true,
+      "reason": "ScanSnap scanner software - no ScanSnap connected right now.",
+      "note": "Install it if you will use the scanner with this PC."
+    },
+    {
+      "id": "cyberpower-ups",
+      "match": ["CyberPower*", "PowerPanel*"],
+      "requires": { "device": "CyberPower|VID_0764" },
+      "soft": true,
+      "reason": "UPS monitoring software - no CyberPower UPS connected to this PC."
+    },
+    {
+      "id": "apc-ups",
+      "match": ["APC *", "PowerChute*"],
+      "requires": { "device": "American Power Conversion|VID_051D" },
+      "soft": true,
+      "reason": "UPS monitoring software - no APC UPS connected to this PC."
+    },
+    {
+      "id": "logitech",
+      "match": ["Logi *", "Logi", "Logitech*", "logioptionsplus", "LogiOptions*"],
+      "requires": { "device": "Logitech|VID_046D" },
+      "soft": true,
+      "reason": "Logitech device software - no Logitech mouse/keyboard/receiver connected right now.",
+      "note": "Install it if you use a Logitech device with this PC."
+    },
+    {
+      "id": "microsoft-peripherals",
+      "match": ["Microsoft Mouse and Keyboard Center*", "Microsoft.MouseandKeyboardCenter*"],
+      "requires": { "device": "VID_045E" },
+      "soft": true,
+      "reason": "Microsoft mouse/keyboard software - no Microsoft mouse or keyboard connected."
+    },
+    {
+      "id": "garmin",
+      "match": ["Garmin*"],
+      "requires": { "device": "Garmin|VID_091E|Dynastream|VID_0FCF" },
+      "soft": true,
+      "reason": "Garmin software - no Garmin device connected right now.",
+      "note": "Garmin Express also works when you plug the device in later."
+    },
+    {
+      "id": "fan-control-desktop",
+      "match": ["*FAN XPERT*", "Fan Control*", "Rem0o.FanControl*", "SpeedFan*"],
+      "requires": { "chassis": "desktop" },
+      "reason": "Desktop fan control - not suitable for a laptop."
+    },
+    {
+      "id": "rgb-lighting",
+      "match": ["OpenRGB*", "SignalRGB*", "Corsair iCUE*", "iCUE*", "Corsair*", "Razer Synapse*", "Razer*"],
+      "requires": { "device": "Corsair|Razer|VID_1B1C|VID_1532|RGB" },
+      "soft": true,
+      "reason": "RGB / gaming peripheral software - no matching device found."
+    },
+    {
+      "id": "driver-packages",
+      "match": ["Windows Driver Package*", "*Ethernet Controller Driver*", "*Audio Driver*", "*Chipset Driver*", "*Graphics Driver*"],
+      "appliesTo": ["install", "checklist"],
+      "action": "skip",
+      "reason": "Hardware driver for the old PC - Windows and the PC maker supply the right drivers for this one."
+    },
+    {
+      "id": "identity-settings",
+      "match": ["Tailscale*", "RustDesk*", "TeamViewer*", "AnyDesk*", "RemotePC*", "Remotix*", "Splashtop*", "Parsec*", "ZeroTier*", "Dropbox", "DropboxUpdate", "OneDrive*", "Google Drive*", "Bitdefender*"],
+      "appliesTo": ["settings"],
+      "action": "skip",
+      "reason": "Holds this computer's identity or sign-in. Copying it would make the new PC impersonate the old one - sign in fresh instead."
+    },
+    {
+      "id": "browser-sync",
+      "match": ["Mozilla", "Google", "BraveSoftware", "Edge", "Vivaldi", "Opera Software"],
+      "appliesTo": ["settings"],
+      "action": "note",
+      "note": "Browser: signing in to the browser's sync is usually cleaner than copying settings."
+    },
+    {
+      "id": "third-party-antivirus",
+      "match": ["Bitdefender*", "Norton*", "McAfee*", "Kaspersky*", "Avast*", "AVG *", "ESET*", "Webroot*", "Trend Micro*", "Sophos*"],
+      "appliesTo": ["install", "checklist"],
+      "action": "optional",
+      "reason": "Third-party antivirus - Windows Security is already built in. Do not run two antivirus products at once, so this is left unticked."
+    },
+    {
+      "id": "browser-web-apps",
+      "match": ["BraveSoftware\\Brave-Browser*", "Google\\Chrome*", "Microsoft\\Edge*", "Chromium*"],
+      "appliesTo": ["checklist"],
+      "action": "skip",
+      "reason": "A web app installed from a browser - reinstall it from the browser (Install app / Add to desktop)."
+    },
+    {
+      "id": "licensed",
+      "match": ["ABBYY*", "Acronis*", "FreeFileSync*Supporter*", "HyperSnap*", "Duplicate File Detective*", "VideoProc*", "WinX*", "HitPaw*", "Paragon*", "Microsoft 365*", "Microsoft Office*", "Microsoft OneNote*", "Total Commander*", "Ghisler.TotalCommander*", "XYplorer*", "CologneCodeCompany.XYplorer*", "TextCrawler Pro*", "DigitalVolcanoSoftware.TextCrawler.Pro*", "Duplicate Cleaner Pro*", "DigitalVolcanoSoftware.DuplicateCleaner*", "WinRAR*", "RARLab.WinRAR*", "Beyond Compare*", "Directory Opus*", "Snagit*", "Camtasia*", "Adobe Acrobat*", "Glary Utilities*", "Glarysoft.GlaryUtilities*", "PDF-XChange*", "TrackerSoftware.PDF-XChangeEditor*", "MultiCommander*"],
+      "action": "note",
+      "note": "Licensed software - have your key or account ready. Some products must be deactivated on the old PC first."
+    },
+    {
+      "id": "vmware",
+      "match": ["VMware Workstation*", "VMware*"],
+      "action": "note",
+      "note": "VMware Workstation Pro is free for personal use - download from Broadcom (account required). Copy your virtual machine folders separately."
+    },
+    {
+      "id": "bundleware",
+      "match": ["PC App Store*", "PCAppStore*", "Fast Corporation*", "WebCompanion*", "OneLaunch*", "Wave Browser*", "Shift Browser*", "ByteFence*", "Segurazo*", "Driver Booster*", "Driver Easy*", "Advanced SystemCare*"],
+      "action": "skip",
+      "reason": "Commonly bundled with other installers (adware or nagware) - not worth carrying over."
+    },
+    {
+      "id": "windows-builtin",
+      "match": ["Copilot", "Microsoft Edge*", "Microsoft.Edge*", "Windows 10 Update Assistant*", "Microsoft.UpdateAssistant*", "Microsoft Update Health*", "Windows PC Health Check*", "Microsoft.AppInstaller*", "Microsoft.UI.Xaml*", "Microsoft.VCLibs*", "Microsoft.WindowsAppRuntime*", "Microsoft.DotNet.Native*"],
+      "appliesTo": ["install", "checklist"],
+      "action": "skip",
+      "reason": "Part of Windows or installed automatically - nothing to do."
+    },
+    {
+      "id": "auto-installed-parts",
+      "match": ["Mozilla Maintenance Service*", "Microsoft Visual Studio Installer*", "HP * Plugin", "Logi Plugin Service*", "SharePoint Client Components*", "AURA lighting effect add-on*", "Microsoft SQL Server Compact*", "RemotePC Printer*", "Npcap*", "Microsoft OneNote*"],
+      "appliesTo": ["checklist"],
+      "action": "skip",
+      "reason": "Installed automatically as part of another program (OneNote comes with Microsoft 365)."
+    }
+  ],
+
+  "alternatives": [
+    { "match": ["Mozilla Firefox*"], "winget": "Mozilla.Firefox" },
+    { "match": ["WinSCP*"], "winget": "WinSCP.WinSCP" },
+    { "match": ["EverythingToolbar*"], "winget": "srwi.EverythingToolbar" },
+    { "match": ["WhoCrashed*"], "winget": "Resplendence.WhoCrashed" },
+    { "match": ["Microsoft 365*", "Microsoft Office 365*"], "winget": "Microsoft.Office" }
+  ],
+
+  "suggest": [
+    { "id": "hp", "when": { "manufacturer": "HP|Hewlett" }, "name": "HP Support Assistant", "winget": "HP.SupportAssistant", "note": "HP's tool for drivers, BIOS and firmware updates on this PC." },
+    { "id": "dell", "when": { "manufacturer": "Dell|Alienware" }, "name": "Dell Command | Update", "winget": "Dell.CommandUpdate", "note": "Dell's tool for drivers, BIOS and firmware updates on this PC." },
+    { "id": "lenovo", "when": { "manufacturer": "Lenovo" }, "name": "Lenovo System Update", "winget": "Lenovo.SystemUpdate", "note": "Lenovo's tool for drivers, BIOS and firmware updates on this PC." },
+    { "id": "msi", "when": { "manufacturer": "Micro-Star|MSI" }, "name": "MSI Center", "winget": "MSI.MSICenter", "note": "MSI's system utility and driver updates." },
+    { "id": "intel", "when": { "anyOf": [ { "cpu": "Intel" }, { "gpu": "Intel" } ] }, "name": "Intel Driver & Support Assistant", "winget": "Intel.IntelDriverAndSupportAssistant", "note": "Keeps Intel graphics, Wi-Fi and Bluetooth drivers current." },
+    { "id": "nvidia", "when": { "gpu": "NVIDIA" }, "name": "NVIDIA graphics driver", "winget": "", "note": "Laptop NVIDIA graphics: get the driver from the PC maker's support tool, or from nvidia.com (search for your exact GPU model)." },
+    { "id": "amd", "when": { "gpu": "AMD|Radeon" }, "name": "AMD Software: Adrenalin Edition", "winget": "", "note": "Get it from amd.com/support (auto-detect tool)." }
+  ]
+}
