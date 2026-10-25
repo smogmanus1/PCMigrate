@@ -59,7 +59,7 @@ function Show-PMPlan($plan, [string]$sourceText, [string]$targetText, [string[]]
     $tool.Dock = 'Top'; $tool.Height = 38; $tool.Padding = New-Object System.Windows.Forms.Padding(8, 4, 8, 0)
     $lblF = New-Object System.Windows.Forms.Label; $lblF.Text = 'Filter:'; $lblF.AutoSize = $true; $lblF.Margin = New-Object System.Windows.Forms.Padding(0, 7, 4, 0)
     $filter = New-Object System.Windows.Forms.TextBox; $filter.Width = 260
-    $bRec  = New-Object System.Windows.Forms.Button; $bRec.Text = 'Recommended'; $bRec.AutoSize = $true
+    $bRec  = New-Object System.Windows.Forms.Button; $bRec.Text = 'Reset to recommended'; $bRec.AutoSize = $true
     $bAll  = New-Object System.Windows.Forms.Button; $bAll.Text = 'Select all shown'; $bAll.AutoSize = $true
     $bNone = New-Object System.Windows.Forms.Button; $bNone.Text = 'Clear shown'; $bNone.AutoSize = $true
     $hide  = New-Object System.Windows.Forms.CheckBox; $hide.Text = 'Hide items with nothing to do'; $hide.AutoSize = $true; $hide.Checked = $true; $hide.Margin = New-Object System.Windows.Forms.Padding(16, 6, 0, 0)

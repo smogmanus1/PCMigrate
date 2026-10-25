@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.5 - 2026-10-24
+
+- First run of a complete migration (desktop to HP ZBook) - works end to end
+- "Recommended" button renamed "Reset to recommended" (it undoes your own tick changes)
+
 ## 1.0.4 - 2026-10-24
 
 - Restore window: the Restore selected / Save report / Cancel buttons could end up outside the window - the bottom bar is now laid out from the window's real size

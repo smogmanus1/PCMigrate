@@ -52,6 +52,8 @@ F:\Dropbox paths saved in your apps            Drive F: mapped so they keep work
 
 Changed your mind? **3. Undo last restore** puts back everything that restore changed.
 
+> **Tip:** if double-clicking `PCMigrate.ahk` says *"This app can't run on your PC"*, Windows' `.ahk` file association is broken. Right-click the file > **Open with** > **Choose an app on your PC** > `C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe` > **Always**.
+
 Without AutoHotkey:
 ```powershell
 # old PC
