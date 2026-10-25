@@ -79,14 +79,30 @@ function Show-PMPlan($plan, [string]$sourceText, [string]$targetText, [string[]]
     $bottom.Dock = 'Bottom'; $bottom.Height = 150
     $details = New-Object System.Windows.Forms.TextBox
     $details.Multiline = $true; $details.ReadOnly = $true; $details.ScrollBars = 'Vertical'
-    $details.SetBounds(10, 6, 1000, 92); $details.Anchor = 'Top,Left,Right'
-    $count = New-Object System.Windows.Forms.Label
-    $count.SetBounds(10, 112, 600, 24); $count.Anchor = 'Bottom,Left'
-    $bReport = New-Object System.Windows.Forms.Button; $bReport.Text = 'Save report...'; $bReport.SetBounds(820, 106, 130, 32); $bReport.Anchor = 'Bottom,Right'
-    $bApply  = New-Object System.Windows.Forms.Button; $bApply.Text = 'Restore selected'; $bApply.SetBounds(960, 106, 150, 32); $bApply.Anchor = 'Bottom,Right'
-    $bCancel = New-Object System.Windows.Forms.Button; $bCancel.Text = 'Cancel'; $bCancel.SetBounds(1120, 106, 120, 32); $bCancel.Anchor = 'Bottom,Right'
+    $details.Location = New-Object System.Drawing.Point(10, 6)
+    $count = New-Object System.Windows.Forms.Label; $count.AutoSize = $true
+    $bReport = New-Object System.Windows.Forms.Button; $bReport.Text = 'Save report...'; $bReport.AutoSize = $true
+    $bApply  = New-Object System.Windows.Forms.Button; $bApply.Text = 'Restore selected'; $bApply.AutoSize = $true
+    $bCancel = New-Object System.Windows.Forms.Button; $bCancel.Text = 'Cancel'; $bCancel.AutoSize = $true
+    $bApply.Font = New-Object System.Drawing.Font('Segoe UI', 9, [System.Drawing.FontStyle]::Bold)
     $bottom.Controls.AddRange(@($details, $count, $bReport, $bApply, $bCancel))
-    $bottom.Add_Resize({ $details.Width = $bottom.ClientSize.Width - 20 })
+    # Lay the bottom bar out from the panel's real size every time it changes (works at any window size / DPI).
+    $layoutBottom = {
+        $w = $bottom.ClientSize.Width; $h = $bottom.ClientSize.Height
+        $bh = [math]::Max($bApply.PreferredSize.Height, 30) + 4
+        $y = $h - $bh - 8
+        $details.Size = New-Object System.Drawing.Size([math]::Max(100, $w - 20), [math]::Max(30, $y - 14))
+        $x = $w - 10
+        foreach ($b in @($bCancel, $bApply, $bReport)) {
+            $bw = [math]::Max($b.PreferredSize.Width + 16, 110)
+            $x -= $bw
+            $b.SetBounds($x, $y, $bw, $bh)
+            $x -= 8
+        }
+        $count.Location = New-Object System.Drawing.Point(10, ($y + [int](($bh - $count.PreferredHeight) / 2)))
+    }
+    $bottom.Add_Resize($layoutBottom)
+    $form.Add_Shown($layoutBottom)
 
     $form.Controls.Add($lv)
     $form.Controls.Add($bottom)

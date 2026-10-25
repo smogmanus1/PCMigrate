@@ -309,7 +309,7 @@
       "match": ["Mozilla Maintenance Service*", "Microsoft Visual Studio Installer*", "HP * Plugin", "Logi Plugin Service*", "SharePoint Client Components*", "AURA lighting effect add-on*", "Microsoft SQL Server Compact*", "RemotePC Printer*", "Npcap*", "Microsoft OneNote*"],
       "appliesTo": ["checklist"],
       "action": "skip",
-      "reason": "Installed automatically as part of another program (OneNote comes with Microsoft 365)."
+      "reason": "Comes with another program and installs along with it."
     }
   ],
 

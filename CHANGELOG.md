@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4 - 2026-10-24
+
+- Restore window: the Restore selected / Save report / Cancel buttons could end up outside the window - the bottom bar is now laid out from the window's real size
+- Clearer reason text for components that install along with another program
+
 ## 1.0.3 - 2026-10-24
 
 - Path scan ignores random bytes in binary files that only look like drive paths (first real Preview printed hundreds of "Illegal characters in path" errors)
