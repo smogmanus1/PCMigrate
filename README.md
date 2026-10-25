@@ -1,3 +1,5 @@
+![PCMigrate - move to a new Windows PC, the right way](docs/images/banner.jpg)
+
 # PCMigrate
 
 **Move your apps and settings from an old Windows PC to a new one, and let the new PC decide what actually fits its hardware.**
@@ -19,6 +21,9 @@ F:\Dropbox paths saved in your apps            Drive F: mapped so they keep work
 ---
 
 ## Features
+
+![What PCMigrate does](docs/images/overview.jpg)
+
 
 - **Hardware-aware compatibility engine.** Rules check the new PC's GPU, CPU, maker, chassis (laptop/desktop), connected USB devices and printers. Vendor utilities, drivers and peripheral software are only installed where they make sense.
 - **Knows what is installed.** Each settings folder and registry key is matched to its program, so settings are restored only for apps that are present, or that are being installed in the same run.
