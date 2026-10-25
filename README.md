@@ -4,19 +4,22 @@
 
 **Move your apps and settings from an old Windows PC to a new one, and let the new PC decide what actually fits its hardware.**
 
-Most migration tools copy everything and hope for the best. PCMigrate captures the old PC, then runs the decisions on the **new** PC, where it can see the real hardware: graphics, processor, maker, laptop or desktop, connected devices and printers. You get a checklist with sensible items pre-ticked and a plain-English reason next to everything else.
+Most migration tools copy everything and hope it works. PCMigrate splits the job in two: it captures the old PC, then makes every decision on the new one, where it can see the actual hardware: graphics card, processor, manufacturer, laptop or desktop, and connected devices and printers.
 
-```
-Old PC (desktop)                               New PC (laptop)
-AMD Ryzen + Radeon, ASUS board          ->     Intel + NVIDIA, HP ZBook
---------------------------------------------------------------------------
-Notepad++ + its settings                       Will install, settings restored
-AMD Software / Armoury Crate / AURA            Wrong hardware - skipped
-HP LaserJet software                           Device not found - unticked
-Tailscale / RustDesk settings                  Not recommended (would clone the old PC's identity)
-F:\Dropbox paths saved in your apps            Drive F: mapped so they keep working
-(nothing)                                      Suggested: HP Support Assistant, Intel DSA
-```
+The result is a checklist. Items that fit the new PC are ticked for you, and everything else comes with a plain-English reason, so you always know why.
+
+**Example: moving from a desktop to a laptop**
+
+| From the old PC | What PCMigrate does on the new one |
+|---|---|
+| Notepad++ and its settings | Installs it and restores your settings |
+| AMD Software, Armoury Crate, AURA | Skips them: wrong hardware for this PC |
+| HP LaserJet software | Leaves it unticked: printer not connected |
+| Tailscale and RustDesk settings | Reinstalls the apps but not their settings, which would clone the old PC's identity |
+| `F:\Dropbox` paths saved inside your apps | Maps drive F: so those paths keep working |
+| *(nothing)* | Suggests HP Support Assistant and Intel Driver & Support Assistant for this hardware |
+
+*Old PC: AMD Ryzen + Radeon on an ASUS board. New PC: Intel + NVIDIA in an HP ZBook.*
 
 ---
 
