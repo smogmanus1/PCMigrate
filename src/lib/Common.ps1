@@ -8,7 +8,7 @@
 # Windows PowerShell 5.1 compatible - keep this file ASCII only.
 # ==============================================================================
 
-$script:PMVersion = '1.0.5'
+$script:PMVersion = '1.0.6'
 $script:PMSchema  = 2
 
 # ----------------------------- Console output ---------------------------------
@@ -191,6 +191,31 @@ function Invoke-PMRobocopy([string]$src, [string]$dst, [string[]]$extra, [string
     if ($log) { $rcArgs += "/LOG+:$log" }
     & robocopy @rcArgs | Out-Null
     return ($LASTEXITCODE -lt 8)
+}
+
+# ----------------------------- Windows version ---------------------------------
+# Windows 10/11: supported. Windows 8/8.1: capture only, best effort. Older: refused.
+function Get-PMWindowsName {
+    $v = [Environment]::OSVersion.Version
+    if ($v.Major -ge 10) { if ($v.Build -ge 22000) { return 'Windows 11' } else { return 'Windows 10' } }
+    switch ("$($v.Major).$($v.Minor)") {
+        '6.3'   { return 'Windows 8.1' }
+        '6.2'   { return 'Windows 8' }
+        '6.1'   { return 'Windows 7' }
+        default { return "Windows $($v.Major).$($v.Minor)" }
+    }
+}
+function Assert-PMWindows([string]$Role) {
+    $v = [Environment]::OSVersion.Version
+    if ($v.Major -ge 10) { return $true }
+    $name = Get-PMWindowsName
+    if ($Role -eq 'Capture' -and $v.Major -eq 6 -and $v.Minor -ge 2) {
+        Write-PMWarn "$name is not officially supported - PCMigrate is built for Windows 10 and 11."
+        Write-PMWarn "The capture will try its best. winget does not exist on $name, so every app goes on the install-by-hand list."
+        return $true
+    }
+    Write-PMError "PCMigrate needs Windows 10 or 11 for this step ($Role). This PC runs $name."
+    return $false
 }
 
 # ----------------------------- Elevation / user -------------------------------

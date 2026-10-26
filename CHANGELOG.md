@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.6 - 2026-10-25
+
+- Windows version check: the launcher shows a one-line system check (Windows version and whether winget is available) and explains the limits on older Windows
+- Windows 8 / 8.1: capture is allowed as a best effort (no winget, so apps go on the install-by-hand list); restore and undo are refused
+- Windows 7 and older: a plain explanation instead of PowerShell errors
+- README: Windows versions table; the old PC needs nothing installed and no admin rights
+
 ## 1.0.5 - 2026-10-24
 
 - First run of a complete migration (desktop to HP ZBook) - works end to end

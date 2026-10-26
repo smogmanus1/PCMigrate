@@ -26,6 +26,7 @@ $toolRoot = Split-Path $PSScriptRoot -Parent
 . "$PSScriptRoot\lib\SystemInfo.ps1"
 $Host.UI.RawUI.WindowTitle = "PCMigrate $script:PMVersion - Capture"
 trap { Write-PMError "Unexpected error: $_"; Write-PMLog ($_ | Out-String); if (-not $Unattended) { Read-Host 'Press Enter to close' }; exit 1 }
+if (-not (Assert-PMWindows 'Capture')) { if (-not $Unattended) { Read-Host 'Press Enter to close' }; exit 1 }
 
 if (-not $ConfigPath) { $ConfigPath = Join-Path $toolRoot 'PCMigrate.ini' }
 $ini = Read-PMIni $ConfigPath

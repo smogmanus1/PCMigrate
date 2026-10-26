@@ -41,10 +41,22 @@ The result is a checklist. Items that fit the new PC are ticked for you, and eve
 
 ## Requirements
 
-- Windows 10 or 11, Windows PowerShell 5.1 (built in)
+- Windows 10 or 11, with Windows PowerShell 5.1 (built in). Nothing else has to be installed on the old PC.
 - [AutoHotkey v2](https://www.autohotkey.com/) for the launcher (optional; the PowerShell scripts run on their own)
 - [winget](https://learn.microsoft.com/windows/package-manager/winget/) (App Installer, built into current Windows) for automatic app installs
-- Administrator rights on the new PC
+- Administrator rights on the new PC (the old PC doesn't need them)
+
+### Windows versions
+
+| Windows | Status |
+|---|---|
+| Windows 11 | Supported and tested |
+| Windows 10, version 1809 or newer | Supported. If winget is missing, get **App Installer** from the Microsoft Store. |
+| Older Windows 10 | Works, but without winget the apps go on the install-by-hand list. Settings, paths and preferences still move. |
+| Windows 8 / 8.1 | Capture only, best effort and untested. Needs [PowerShell 5.1](https://www.microsoft.com/download/details.aspx?id=54616). No automatic app installs. |
+| Windows 7 and older | Not supported |
+
+Moving between versions (for example Windows 10 to Windows 11) is fully supported. The launcher shows a one-line check of your Windows version and winget when it opens, and explains the limits if you are on an older version.
 
 ## Quick start
 

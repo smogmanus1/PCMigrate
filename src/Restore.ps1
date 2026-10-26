@@ -37,6 +37,7 @@ trap {
 }
 
 function Exit-PM([int]$code = 0) { if (-not $Unattended) { Read-Host 'Press Enter to close' }; exit $code }
+if (-not (Assert-PMWindows 'Restore')) { Exit-PM 1 }
 
 if (-not $ConfigPath) { $ConfigPath = Join-Path $toolRoot 'PCMigrate.ini' }
 $ini = Read-PMIni $ConfigPath
