@@ -35,7 +35,8 @@ The result is a checklist. Items that fit the new PC are ticked for you, and eve
 - **Path fixing.** Finds paths saved inside settings (`F:\Dropbox\...`, `C:\Users\olduser\...`), including JSON-escaped, forward-slash and registry forms. Then either maps the missing drive letter back with a junction (no files moved), or rewrites the paths in text settings files.
 - **Windows preferences.** File Explorer options, dark/light mode, keyboard and mouse, relocated Documents/Desktop folders, environment variables and PATH, startup items, your own scheduled tasks, added fonts, Windows Terminal settings, PowerShell profiles, `.gitconfig`, optional Wi-Fi networks and mapped network drives.
 - **Suggestions for the new hardware.** For example HP Support Assistant on an HP, Dell Command Update on a Dell, Intel Driver & Support Assistant on Intel systems.
-- **Free tools catalog.** A **Free tools worth knowing** button lists excellent free utilities (Everything, dnGrep, Notepad++, VS Code, Bulk Crap Uninstaller, Wireshark and more). Ones you already have launch; ones you don't can be installed with winget.
+- **Smart app updates.** **0. Update all apps first** updates one app at a time, retries failed downloads, asks you to close apps that are running, offers to reinstall apps whose installer type changed, and ends with a summary and a log.
+- **Free tools catalog.** A **Free tools worth knowing** button lists 28 excellent free programs (Everything, WizTree, dnGrep, Notepad++, VS Code, Git, Bulk Crap Uninstaller, Angry IP Scanner, Wireshark, Brave, LibreWolf, Claude, ChatGPT and more). Ones you already have launch; ones you don't install with winget, or open their web page if winget can't.
 - **Safe by design.** A preview mode that changes nothing; a System Restore point; a backup of everything that gets replaced; a journal of every change; and a one-click **Undo**.
 - **Readable report.** A self-contained HTML report of the plan and the results.
 - **Editable rules.** All the hardware knowledge lives in [`rules/compat-rules.json`](rules/compat-rules.json). Add your own in a minute ([docs/RULES.md](docs/RULES.md)).
@@ -65,7 +66,7 @@ Moving between versions (for example Windows 10 to Windows 11) is fully supporte
 
 **2. On the old PC:** optionally click **0. Update all apps first** (it updates one app at a time, retries failures, and offers to fix apps winget can't update in place), then restart, so the captured settings match the versions the new PC will install. Then click **1. Capture this PC**. Close your browsers and other apps first. Capturing changes nothing on the old PC.
 
-**3. On the new PC** (signed in as the user you are moving to): run `PCMigrate.ahk`.
+**3. On the new PC** (signed in as the user you are moving to): run `PCMigrate.ahk` (or `Start PCMigrate.cmd`).
 - Optional: click **Preview only** to get the report without changing anything.
 - Click **2. Restore onto this PC**, approve the admin prompt, review the checklist, and click **Restore selected**.
 
@@ -80,6 +81,7 @@ Changed your mind? **3. Undo last restore** puts back everything that restore ch
 Without AutoHotkey:
 ```powershell
 # old PC
+powershell -ExecutionPolicy Bypass -File .\src\UpdateApps.ps1      # optional, as administrator
 powershell -ExecutionPolicy Bypass -File .\src\Capture.ps1
 # new PC (as administrator)
 powershell -ExecutionPolicy Bypass -STA -File .\src\Restore.ps1
