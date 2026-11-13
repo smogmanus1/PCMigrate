@@ -6,10 +6,11 @@
 ; PCMigrate moves your apps and settings from an old Windows PC to a new one,
 ; and decides on the NEW PC what actually fits its hardware.
 ;
-;   0. Update all apps        - optional, on the OLD PC first (winget upgrade --all)
+;   0. Update all apps        - optional, on the OLD PC first (winget, one app at a time, fixes failures)
 ;   1. Capture this PC        - run on the OLD PC (creates a package)
 ;   2. Restore onto this PC   - run on the NEW PC (checks hardware, you pick, it applies)
 ;   3. Undo last restore      - puts back everything a restore changed
+;   Free tools                - catalog of free utilities: launch what is installed, install the rest
 ;
 ; Project : https://github.com/smogmanus1/PCMigrate
 ; Authors : Brad Schrunk (concept, design direction, testing)
@@ -17,7 +18,7 @@
 ; License : MIT
 ; ==============================================================================
 
-global PM_Version := "1.0.6"
+global PM_Version := "1.1.1"
 global PM_Src     := A_ScriptDir "\src"
 global PM_Ini     := A_ScriptDir "\PCMigrate.ini"
 global PM_Rules   := A_ScriptDir "\rules\compat-rules.json"
@@ -51,11 +52,14 @@ PM_Gui.AddButton("w166 h30 Section", "Packages folder").OnEvent("Click", PM_Open
 PM_Gui.AddButton("w166 h30 x+8", "Restore backups").OnEvent("Click", PM_OpenBackups)
 PM_Gui.AddButton("w166 h30 xs", "Settings (INI)").OnEvent("Click", (*) => Run('notepad.exe "' PM_Ini '"'))
 PM_Gui.AddButton("w166 h30 x+8", "Hardware rules").OnEvent("Click", (*) => Run('notepad.exe "' PM_Rules '"'))
-PM_Gui.AddButton("w340 h30 xs", "About").OnEvent("Click", PM_About)
+PM_Gui.AddButton("w340 h30 xs", "Free tools worth knowing...").OnEvent("Click", FT_Show)
+PM_Gui.AddButton("w340 h30", "About").OnEvent("Click", PM_About)
 
 PM_Gui.OnEvent("Close", (*) => ExitApp())
 PM_Gui.OnEvent("Escape", (*) => ExitApp())
 PM_Gui.Show()
+
+#Include src\FreeTools.ahk
 
 ; ---------------------------------------------------------------------------
 ; Windows version check
@@ -135,16 +139,16 @@ PM_Run(script, elevate, extra := "") {
 }
 
 ; Updates every winget-managed app so the captured settings match the versions the new PC will install.
-; Licence and source agreements are accepted automatically; the window stays open so you can read the results.
+; src\UpdateApps.ps1 updates one app at a time, retries download failures, asks you to close apps that
+; are running and retries them, and offers to reinstall apps whose installer type changed. Summary + log at the end.
 PM_UpdateApps(*) {
-    if MsgBox("Update all apps with winget now?`n`nClose your browsers and other open apps first - an installer can't update an app that is running.`n`nAfterwards: restart, open your main apps once, then capture.", "PCMigrate", "OKCancel Iconi") != "OK"
+    if MsgBox("Update all apps with winget now?`n`n"
+        . "Close your browsers and other open apps first - an installer can't update an app that is running.`n`n"
+        . "PCMigrate updates one app at a time, retries anything that fails, and asks before reinstalling "
+        . "an app whose installer changed.`n`n"
+        . "Afterwards: restart, open your main apps once, then capture.", "PCMigrate", "OKCancel Iconi") != "OK"
         return
-    upd := "winget source update && winget upgrade --all --include-unknown --silent"
-        . " --accept-package-agreements --accept-source-agreements --disable-interactivity"
-    cmd := A_ComSpec ' /k "title PCMigrate - updating apps && ' upd ' & echo. & echo ===== Done. Run it again to catch anything that was in use, then restart. ====="'
-    try Run("*RunAs " cmd)
-    catch
-        MsgBox("Cancelled (administrator permission was not given).", "PCMigrate", "Icon!")
+    PM_Run("UpdateApps.ps1", true)
 }
 
 PM_PackageRoot() {

@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.1.1 - 2026-11-13
+
+- **0. Update all apps** now runs `src/UpdateApps.ps1` instead of a single `winget upgrade --all`, and fixes what fails:
+  - updates one app at a time, so every app gets a clear result
+  - download and installer hiccups are retried automatically
+  - apps that were running: you are asked to close them, then they are retried
+  - "newer version uses a different install technology" (winget refuses these): offers to uninstall the old version and install the new one, asking per app
+  - ends with a summary (updated / already current / restart to finish / not updated, with the reason) and a log in `%USERPROFILE%\PCMigrate\Logs`
+
+## 1.1.0 - 2026-11-12
+
+- New **Free tools worth knowing** window (`src/FreeTools.ahk`): a catalog of excellent free utilities many people have never heard of - Everything, dnGrep, Notepad++, VS Code, WinMerge, Bulk Crap Uninstaller, WinDirStat, Wireshark, Process Explorer, PowerToys, HWiNFO, CrystalDiskInfo, 7-Zip, ShareX, VLC, OBS, KeePassXC, Rufus, AutoHotkey
+- Tools already on the PC show **Installed** and can be launched; missing ones can be installed with winget, or opened as a web page
+- Add your own tool with one line in `FT_Catalog()`
+
 ## 1.0.6 - 2026-10-25
 
 - Windows version check: the launcher shows a one-line system check (Windows version and whether winget is available) and explains the limits on older Windows
