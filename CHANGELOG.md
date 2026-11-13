@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.2 - 2026-11-13
+
+- **Start PCMigrate.cmd**: starts PCMigrate with AutoHotkey v2 directly, so it works even when double-clicking `.ahk` files fails with "This app can't run on your PC"
+- **Fix AHK file association.cmd** (`tools/Repair-AhkAssociation.ps1`): shows which program Windows uses for `.ahk` files and why it fails (missing, empty, cloud-only or wrong-processor program), registers AutoHotkey v2 for the current user, clears the broken "always use" choice, and opens the *Open with* window if Windows protects it
+- `.cmd` files are kept with Windows line endings (`.gitattributes`)
+- Free tools: added **WizTree** (like WinDirStat, but scans a whole drive in seconds), **Angry IP Scanner**, **Brave**, **LibreWolf**, **Claude**, **ChatGPT**, **Microsoft To Do**, **Git** and **GitHub Desktop**
+- Free tools: Microsoft Store apps (To Do, ChatGPT, Claude) are now recognised as installed
+- Free tools: when winget can't install a tool (for example the publisher moved the download and winget's link gives "404 Not found", as with HWiNFO), PCMigrate now offers to open the tool's web page; after a successful install the list refreshes by itself
+
 ## 1.1.1 - 2026-11-13
 
 - **0. Update all apps** now runs `src/UpdateApps.ps1` instead of a single `winget upgrade --all`, and fixes what fails:

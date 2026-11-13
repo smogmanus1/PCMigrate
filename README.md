@@ -73,7 +73,9 @@ Moving between versions (for example Windows 10 to Windows 11) is fully supporte
 
 Changed your mind? **3. Undo last restore** puts back everything that restore changed.
 
-> **Tip:** if double-clicking `PCMigrate.ahk` says *"This app can't run on your PC"*, Windows' `.ahk` file association is broken. Right-click the file > **Open with** > **Choose an app on your PC** > `C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe` > **Always**.
+> **Tip:** if double-clicking `PCMigrate.ahk` says *"This app can't run on your PC"*, Windows has lost track of which program opens `.ahk` files. Two fixes, both in the PCMigrate folder:
+> - **`Start PCMigrate.cmd`** always works: it finds AutoHotkey v2 itself and starts PCMigrate with it. Point your shortcuts at this file.
+> - **`Fix AHK file association.cmd`** repairs double-clicking for all `.ahk` files. It shows what was wrong, registers AutoHotkey v2 for your user (no admin needed), and if Windows insists, opens the *Open with* window so you can pick AutoHotkey v2 and click **Always**.
 
 Without AutoHotkey:
 ```powershell

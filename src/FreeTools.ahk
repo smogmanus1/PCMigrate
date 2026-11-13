@@ -6,7 +6,8 @@
 ;   Missing    -> Install it with winget (or open its web page if winget can't)
 ; Included by PCMigrate.ahk. To add a tool, add one line to FT_Catalog().
 ; Fields: name, category, what-it-does, exe names (or full paths), uninstall-list
-;         name pattern, winget ID ("" = none), web page
+;         name pattern, winget ID ("" = none), web page,
+;         optional 8th field: Store / MSIX package name patterns, e.g. ["Microsoft.Todos_*"]
 ; Please verify new winget IDs with:  winget show --id <ID>
 ; ==============================================================================
 
@@ -26,6 +27,8 @@ FT_Catalog() {
         ["BCUninstaller.exe", "%ProgramFiles%\BCUninstaller\BCUninstaller.exe"], "Bulk Crap Uninstaller*", "Klocman.BulkCrapUninstaller", "https://www.bcuninstaller.com"])
     t.Push(["WinDirStat", "Cleanup", "Draws a map of your drive so you can see at a glance what is eating the space.",
         ["WinDirStat.exe", "%ProgramFiles%\WinDirStat\WinDirStat.exe"], "WinDirStat*", "WinDirStat.WinDirStat", "https://windirstat.net"])
+    t.Push(["WizTree", "Cleanup", "Like WinDirStat but many times faster: reads the drive's file table directly, so a full scan takes seconds. Free for personal use.",
+        ["WizTree64.exe", "%ProgramFiles%\WizTree\WizTree64.exe", "%ProgramFiles%\WizTree\WizTree.exe"], "WizTree*", "AntibodySoftware.WizTree", "https://diskanalyzer.com"])
     t.Push(["Wireshark", "Network", "Shows the network traffic on your PC. The standard tool for finding out what is talking to what.",
         ["Wireshark.exe", "%ProgramFiles%\Wireshark\Wireshark.exe"], "Wireshark*", "WiresharkFoundation.Wireshark", "https://www.wireshark.org"])
     t.Push(["Process Explorer", "System", "A much better Task Manager from Microsoft Sysinternals: shows which program owns every process and file.",
@@ -48,6 +51,22 @@ FT_Catalog() {
         ["KeePassXC.exe", "%ProgramFiles%\KeePassXC\KeePassXC.exe"], "KeePassXC*", "KeePassXCTeam.KeePassXC", "https://keepassxc.org"])
     t.Push(["Rufus", "System", "Makes a bootable USB stick for installing Windows or Linux.",
         ["rufus.exe"], "", "Rufus.Rufus", "https://rufus.ie"])
+    t.Push(["Angry IP Scanner", "Network", "Scans your home network and lists every device on it: computers, phones, printers, cameras, with names and open ports.",
+        ["ipscan.exe", "%ProgramFiles(x86)%\Angry IP Scanner\ipscan.exe", "%ProgramFiles%\Angry IP Scanner\ipscan.exe"], "Angry IP Scanner*", "angryziber.AngryIPScanner", "https://angryip.org"])
+    t.Push(["Brave", "Web", "Fast web browser built on Chrome's engine that blocks ads and trackers out of the box. Chrome extensions work.",
+        ["brave.exe", "%ProgramFiles%\BraveSoftware\Brave-Browser\Application\brave.exe", "%LOCALAPPDATA%\BraveSoftware\Brave-Browser\Application\brave.exe"], "Brave*", "Brave.Brave", "https://brave.com"])
+    t.Push(["LibreWolf", "Web", "Privacy-first version of Firefox: no telemetry, tracking protection and uBlock Origin built in.",
+        ["librewolf.exe", "%ProgramFiles%\LibreWolf\librewolf.exe"], "LibreWolf*", "LibreWolf.LibreWolf", "https://librewolf.net"])
+    t.Push(["Claude", "AI", "Anthropic's AI assistant as a desktop app: writing, research, coding help, and work with the files on your PC.",
+        ["%LOCALAPPDATA%\AnthropicClaude\claude.exe"], "Claude", "Anthropic.Claude", "https://claude.ai/download", ["Claude_*__pzs8sxrjxfjjc"]])
+    t.Push(["ChatGPT", "AI", "OpenAI's AI assistant as a desktop app, with a keyboard shortcut to ask it anything from anywhere.",
+        [], "ChatGPT*", "OpenAI.ChatGPT", "https://chatgpt.com/download", ["OpenAI.Codex_*__2p2nqsd0c76g0", "OpenAI.ChatGPT*"]])
+    t.Push(["Microsoft To Do", "Productivity", "Simple to-do lists and reminders that sync with your phone and Outlook tasks.",
+        [], "", "9NBLGGH5R558", "https://apps.microsoft.com/detail/9nblggh5r558", ["Microsoft.Todos_*__8wekyb3d8bbwe"]])
+    t.Push(["Git", "Coding", "Keeps every version of your scripts and projects, and sends them to GitHub. Adds Git Bash and the git command.",
+        ["git.exe", "%ProgramFiles%\Git\cmd\git.exe"], "Git", "Git.Git", "https://git-scm.com"])
+    t.Push(["GitHub Desktop", "Coding", "Point-and-click Git: see what changed, commit and push to GitHub without typing commands.",
+        ["GitHubDesktop.exe", "%LOCALAPPDATA%\GitHubDesktop\GitHubDesktop.exe"], "GitHub Desktop*", "GitHub.GitHubDesktop", "https://desktop.github.com"])
     t.Push(["AutoHotkey v2", "Automation", "The scripting language PCMigrate's launcher is written in. Automate clicks, keys, windows and text.",
         ["AutoHotkey64.exe", "%ProgramFiles%\AutoHotkey\v2\AutoHotkey64.exe"], "AutoHotkey*", "AutoHotkey.AutoHotkey", "https://www.autohotkey.com"])
     return t
@@ -78,6 +97,8 @@ FT_Find(tool) {
     ; Last resort: look for the name in the installed-programs list
     if (tool[5] != "" && FT_InUninstallList(tool[5]))
         return "(installed)"
+    if (tool.Length >= 8 && FT_InStoreApps(tool[8]))
+        return "(installed)"
     return ""
 }
 
@@ -87,8 +108,22 @@ FT_Expand(p) {
     return p
 }
 
+; Store / MSIX apps (Microsoft To Do, ChatGPT, Claude from the Store...) don't show in the uninstall
+; list. Windows keeps one registry key per installed package, named PackageName_Version_Arch__PublisherId.
+FT_InStoreApps(patterns) {
+    key := "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages"
+    for pat in patterns {
+        rx := "i)^" StrReplace(RegExReplace(pat, "([.+?^${}()|\[\]\\])", "\$1"), "*", ".*") "$"
+        try loop reg, key, "K" {
+            if RegExMatch(A_LoopRegName, rx)
+                return true
+        }
+    }
+    return false
+}
+
 FT_InUninstallList(pattern) {
-    rx := "i)^" StrReplace(RegExReplace(pattern, "([.+?^${}()|\[\]\\])", "\$1"), "*", ".*")
+    rx := "i)^" StrReplace(RegExReplace(pattern, "([.+?^${}()|\[\]\\])", "\$1"), "*", ".*") "$"   ; whole name, so "Git" doesn't match "GitHub Desktop"
     for key in ["HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
               , "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
               , "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"]
@@ -114,7 +149,7 @@ FT_Show(*) {
     g.SetFont("s9 norm cGray")
     g.AddText("w660 y+2", "Excellent free programs many people have never heard of. Pick one: Launch it if you have it, Install it if you don't.")
     g.SetFont("s10 norm cDefault")
-    lv := g.AddListView("w660 r14 y+10 -Multi Grid", ["Tool", "Type", "Status", "What it does"])
+    lv := g.AddListView("w660 r18 y+10 -Multi Grid", ["Tool", "Type", "Status", "What it does"])
     rows := []
     for t in cat {
         found := FT_Find(t)
@@ -155,7 +190,7 @@ FT_Show(*) {
         r := rows[i], t := r.tool
         if (r.path != "") {
             if (r.path = "(installed)") {
-                MsgBox(t[1] " is installed, but PCMigrate can't tell where. Find it in the Start menu.", "PCMigrate", "Iconi")
+                MsgBox(t[1] " is installed. Start it from the Start menu (type " Chr(34) t[1] Chr(34) ").", "PCMigrate", "Iconi")
                 return
             }
             try Run('"' r.path '"')
@@ -174,9 +209,40 @@ FT_Show(*) {
         }
         if MsgBox("Install " t[1] " now?`n`n" t[3] "`n`nThis runs:  winget install --id " t[6], "PCMigrate - Install", "OKCancel Iconi") != "OK"
             return
-        cmd := A_ComSpec ' /k "title Installing ' t[1] ' && winget install --id ' t[6]
-            . ' -e --silent --accept-package-agreements --accept-source-agreements & echo. & echo ===== Finished. You can close this window. ====="'
+        ; The window shows winget's progress. winget's result code is written to a temp file
+        ; so PCMigrate can react: refresh the list on success, offer the web page on failure
+        ; (e.g. the publisher moved the download and winget's link gives "404 Not found").
+        tmp := A_Temp "\pcmigrate-install-" A_TickCount ".txt"
+        try FileDelete(tmp)
+        cmd := A_ComSpec ' /v:on /c "title Installing ' t[1] ' && winget install --id ' t[6]
+            . ' -e --silent --accept-package-agreements --accept-source-agreements & (echo !errorlevel!)>"' tmp '"'
+            . ' & echo. & echo ===== Finished. You can close this window. ===== & pause >nul"'
         Run(cmd)    ; per-user installs need no admin; installers that do will ask for it themselves
+        started := A_TickCount
+        SetTimer(FT_WaitInstall, 1000)
+
+        FT_WaitInstall() {
+            if !FileExist(tmp) {
+                if (A_TickCount - started > 60 * 60 * 1000)     ; give up watching after an hour
+                    SetTimer(, 0)
+                return
+            }
+            SetTimer(, 0)
+            code := ""
+            try code := Trim(FileRead(tmp), " `r`n")
+            try FileDelete(tmp)
+            ; 0 = installed; 0x8A150061 / 0x8A15010D = already installed; 0x8A150109 = restart to finish
+            if (code = "0" || code = "-1978335135" || code = "-1978334963" || code = "-1978334967") {
+                FT_Refresh()
+                return
+            }
+            hex := IsInteger(code) ? Format("0x{:08X}", code & 0xFFFFFFFF) : code
+            if MsgBox("winget couldn't install " t[1] " (code " hex ").`n`n"
+                . "This usually means the publisher moved the download and winget's link is out of date. "
+                . "It is normally fixed within a few days.`n`n"
+                . "Open the " t[1] " web page to download it yourself?", "PCMigrate - Install", "YesNo Icon!") = "Yes"
+                Run(t[7])
+        }
     }
 
     FT_Refresh() {

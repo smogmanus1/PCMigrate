@@ -18,7 +18,7 @@
 ; License : MIT
 ; ==============================================================================
 
-global PM_Version := "1.1.1"
+global PM_Version := "1.1.2"
 global PM_Src     := A_ScriptDir "\src"
 global PM_Ini     := A_ScriptDir "\PCMigrate.ini"
 global PM_Rules   := A_ScriptDir "\rules\compat-rules.json"
